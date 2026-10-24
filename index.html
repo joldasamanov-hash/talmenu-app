@@ -1,0 +1,693 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>TAL — cafe &amp; restaurant</title>
+<meta name="description" content="TAL — cafe & restaurant в Алматы. Меню кухни и бара, доставка и бронь столика.">
+<meta name="theme-color" content="#f6f1e7">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="TAL">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-512.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;600;800&display=swap">
+<style>
+/* Layout: one column like the printed menu — logo, wave divider, Kitchen/Bar switch, sections with green headings; tab bar at the bottom */
+:root {
+  --bg: #f6f1e7;        /* warm paper */
+  --surface: #fffdf8;
+  --tile: #efe8da;
+  --fg: #1c1a18;        /* logo ink */
+  --muted: #7b7566;
+  --line: #e6dfd0;
+  --green: #536838;     /* menu headings and wave */
+  --green-dark: #3f5129;
+  --on-green: #fffdf8;
+  --error: #b4472f;
+  --font: "Bezier Sans", "Manrope", system-ui, -apple-system, sans-serif;
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-t: env(safe-area-inset-top, 0px);
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--font); line-height: 1.45;
+  padding-bottom: calc(76px + var(--safe-b));
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: var(--safe-t); z-index: 10; background: var(--bg); }
+button, input, select, textarea { font: inherit; color: inherit; }
+button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
+.wrap {
+  max-width: 640px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wave { display: block; width: 100%; height: 8px; color: var(--green); }
+
+/* Header */
+header { padding-block: calc(20px + var(--safe-t)) 4px; text-align: center; }
+.logo { height: 58px; width: auto; display: block; margin: 0 auto; }
+.motto { margin: 10px 0 12px; color: var(--muted); font-size: 13px; font-weight: 300; }
+
+/* Views */
+.view { display: none; }
+.view.active { display: block; }
+h2 { font-weight: 800; font-size: 19px; margin: 18px 0 12px; color: var(--green); letter-spacing: .04em; text-transform: uppercase; text-wrap: balance; }
+
+/* Kitchen / Bar switch + section chips */
+.sticky { position: sticky; top: var(--safe-t); z-index: 5; background: var(--bg); padding-top: 8px; }
+.seg { display: grid; grid-template-columns: 1fr 1fr; background: var(--tile); border-radius: 12px; padding: 3px; }
+.seg button { border: 0; background: none; padding: 9px; border-radius: 9px; cursor: pointer; font-size: 15px; }
+.seg button.on { background: var(--surface); box-shadow: 0 1px 3px rgba(28,26,24,.12); font-weight: 600; }
+.chips { display: flex; gap: 8px; overflow-x: auto; padding: 10px 16px 10px; margin: 0 -16px; scrollbar-width: none; }
+.chips::-webkit-scrollbar { display: none; }
+.chip { flex: none; border: 1px solid var(--line); background: var(--surface); padding: 7px 14px; border-radius: 999px; font-size: 14px; cursor: pointer; }
+.chip.on { background: var(--green); border-color: var(--green); color: var(--on-green); }
+
+/* Menu sections */
+.section { scroll-margin-top: calc(var(--safe-t) + 120px); }
+.section .wave { margin: -4px 0 6px; }
+.section-note { font-size: 13px; color: var(--muted); margin: 0 0 6px; }
+.item { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.item:last-child { border-bottom: 0; }
+.item-main { min-width: 0; }
+.item-name { font-weight: 600; font-size: 15.5px; line-height: 1.3; }
+.item-desc { font-size: 13px; color: var(--muted); margin-top: 2px; }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.tag { font-size: 11.5px; color: var(--green-dark); background: var(--tile); border-radius: 999px; padding: 2px 8px; display: inline-flex; align-items: center; gap: 4px; }
+.tag svg { width: 12px; height: 12px; }
+.sizes { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.size { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 4px 10px; font-size: 12.5px; cursor: pointer; }
+.size.on { border-color: var(--green); color: var(--green-dark); font-weight: 600; }
+.item-side { display: flex; align-items: flex-start; gap: 10px; }
+.price { padding-top: 1px; }
+.item-side .add { margin-top: -7px; }
+.price { font-weight: 600; font-size: 15px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.add {
+  border: 0; background: var(--green); color: var(--on-green); border-radius: 999px;
+  min-width: 36px; height: 36px; font-size: 20px; line-height: 1; cursor: pointer; padding: 0 10px;
+}
+.add.in { font-size: 14px; font-weight: 600; }
+.foot-note { font-size: 12.5px; color: var(--muted); text-align: center; margin: 24px 0 8px; }
+
+/* Forms & panels */
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 16px; margin-bottom: 12px; }
+label { display: block; font-size: 13px; color: var(--muted); margin: 12px 0 6px; }
+input, select, textarea {
+  width: 100%; border: 1px solid var(--line); background: var(--bg); border-radius: 12px;
+  padding: 12px; font-size: 16px; outline: none;
+}
+input:focus, select:focus, textarea:focus { border-color: var(--green); }
+textarea { resize: vertical; min-height: 72px; }
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.row > div { min-width: 0; }
+.primary {
+  display: block; width: 100%; border: 0; background: var(--green); color: var(--on-green); border-radius: 14px;
+  padding: 15px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 16px; text-align: center; text-decoration: none;
+}
+.hint { font-size: 12.5px; color: var(--muted); margin: 10px 0 0; text-align: center; }
+.err { color: var(--error); font-size: 13px; margin: 8px 0 0; min-height: 1em; }
+
+/* Cart */
+.line { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.line-name { flex: 1; min-width: 0; font-size: 15px; }
+.line-price { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.qty { display: flex; align-items: center; gap: 6px; }
+.qty button { width: 32px; height: 32px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); cursor: pointer; font-size: 17px; }
+.qty span { min-width: 18px; text-align: center; font-weight: 600; }
+.total { display: flex; justify-content: space-between; font-weight: 600; font-size: 17px; margin-top: 12px; font-variant-numeric: tabular-nums; }
+.empty { text-align: center; color: var(--muted); padding: 40px 0; }
+
+/* Info */
+.info-row { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.info-row:last-child { border-bottom: 0; }
+.info-row b { font-weight: 600; min-width: 92px; }
+.info-row span { min-width: 0; }
+.info-row a { color: var(--green-dark); }
+
+/* Bottom tab bar */
+nav {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+  background: color-mix(in srgb, var(--surface) 94%, transparent); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid var(--line); padding-bottom: var(--safe-b);
+}
+nav .wrap { display: grid; grid-template-columns: repeat(4, 1fr); }
+nav button {
+  border: 0; background: none; padding: 10px 0 8px; display: flex; flex-direction: column;
+  align-items: center; gap: 3px; font-size: 11px; color: var(--muted); cursor: pointer; position: relative;
+}
+nav button.on { color: var(--green-dark); font-weight: 600; }
+nav svg { width: 24px; height: 24px; }
+.badge {
+  position: absolute; top: 4px; left: 50%; margin-left: 6px; background: var(--green); color: var(--on-green);
+  font-size: 10px; font-weight: 600; min-width: 17px; height: 17px; border-radius: 9px; display: none;
+  align-items: center; justify-content: center; padding: 0 4px;
+}
+.badge.show { display: flex; }
+.toast {
+  position: fixed; left: 50%; bottom: calc(88px + var(--safe-b)); transform: translateX(-50%) translateY(20px);
+  background: var(--fg); color: var(--surface); padding: 10px 18px; border-radius: 999px; font-size: 14px;
+  opacity: 0; transition: .25s; pointer-events: none; z-index: 30; max-width: calc(100% - 32px);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+@media (prefers-reduced-motion: reduce) { .toast { transition: none; } }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <pattern id="wv" width="40" height="8" patternUnits="userSpaceOnUse">
+      <path d="M0 4 Q10 0 20 4 T40 4" fill="none" stroke="#536838" stroke-width="1.6"/>
+    </pattern>
+  </defs>
+</svg>
+
+<header class="wrap">
+  <img class="logo" src="logo.svg" alt="TAL cafe &amp; restaurant">
+  <p class="motto">Степь — обитель простора и спокойствия</p>
+  <svg class="wave" aria-hidden="true"><rect width="100%" height="8" fill="url(#wv)"/></svg>
+</header>
+
+<main class="wrap">
+  <section class="view active" id="v-menu">
+    <div class="sticky">
+      <div class="seg" id="book-switch">
+        <button data-b="Кухня" class="on">Кухня</button>
+        <button data-b="Бар">Бар</button>
+      </div>
+      <div class="chips" id="chips"></div>
+    </div>
+    <div id="sections"></div>
+    <p class="foot-note">Блюдо готовится с момента заказа. Спасибо за ваше терпение.<br>Если у вас есть аллергия, напишите об этом в комментарии.</p>
+  </section>
+
+  <section class="view" id="v-cart">
+    <h2>Ваш заказ</h2>
+    <div id="cart"></div>
+  </section>
+
+  <section class="view" id="v-book">
+    <h2>Бронь столика</h2>
+    <div class="panel">
+      <div class="row">
+        <div><label for="b-date">Дата</label><input type="date" id="b-date"></div>
+        <div><label for="b-time">Время</label><select id="b-time"></select></div>
+      </div>
+      <label for="b-guests">Гостей</label>
+      <select id="b-guests"></select>
+      <label for="b-name">Имя</label>
+      <input id="b-name" autocomplete="name" placeholder="Как к вам обращаться">
+      <label for="b-phone">Телефон</label>
+      <input id="b-phone" type="tel" autocomplete="tel" placeholder="+7 7__ ___ __ __">
+      <label for="b-note">Пожелания</label>
+      <textarea id="b-note" placeholder="День рождения, детский стульчик, место у окна…"></textarea>
+      <p class="err" id="b-err"></p>
+      <a class="primary" id="b-send" href="#" target="_blank" rel="noopener">Забронировать в WhatsApp</a>
+      <p class="hint">Администратор подтвердит бронь в ответном сообщении</p>
+    </div>
+  </section>
+
+  <section class="view" id="v-info">
+    <h2>Место для тёплых встреч</h2>
+    <div class="panel" id="info"></div>
+  </section>
+</main>
+
+<nav>
+  <div class="wrap">
+    <button data-v="menu" class="on">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 11h16a8 8 0 0 1-16 0zM2 19h20M12 4v3M8.5 5l.8 2M15.5 5l-.8 2"/></svg>
+      Меню
+    </button>
+    <button data-v="cart">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h14l-1.2 11.2a2 2 0 0 1-2 1.8H8.2a2 2 0 0 1-2-1.8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>
+      Заказ
+      <span class="badge" id="badge"></span>
+    </button>
+    <button data-v="book">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>
+      Бронь
+    </button>
+    <button data-v="info">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
+      Контакты
+    </button>
+  </div>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== НАСТРОЙКИ РЕСТОРАНА — меняйте здесь =====
+const CONFIG = {
+  whatsapp: "77000000000",          // номер WhatsApp без «+», пробелов и скобок (ВРЕМЕННЫЙ)
+  phone: "+7 700 000 00 00",        // телефон (ВРЕМЕННЫЙ)
+  address: "Алматы, адрес уточняется",
+  mapUrl: "https://2gis.kz/almaty", // ссылка на 2ГИС или Google Maps
+  hours: "Ежедневно 11:00 – 23:00", // (ВРЕМЕННО)
+  instagram: "",                    // например "tal.almaty"
+  openHour: 11, closeHour: 23,      // часы для выбора времени брони
+  deliveryFee: 0,                   // стоимость доставки, ₸ (0 — не показывать)
+  minOrder: 0                       // минимальная сумма заказа, ₸
+};
+
+// Меню TAL, октябрь 2026 (из PDF «Кухня» и «Бар»).
+// Раздел: [название, пояснение, позиции]. Позиция: [название, описание, цена] или [название, описание, [[вариант, цена], ...]];
+// 4-й элемент — отметки: "s" острое, "h" ручная работа.
+const MENU = {
+  "Кухня": [
+    ["Шоты", "", [
+      ["Шубат / кумыс микс", "Клубника, маракуйя, манго, персик, земляника", 3100],
+      ["Immunity фреш", "Яблоко, грейпфрут, апельсин, морковь, микс", 3100]]],
+    ["Салаты", "", [
+      ["Оливье", "", 3190],
+      ["Греческий салат классический", "", 3450],
+      ["Green салат", "С брокколи, оливками и эдамаме", 3650],
+      ["Салат со свёклой и творожным сыром", "", 3650],
+      ["Азиатский салат с хрустящей курицей", "", 3990],
+      ["Тёплый салат с телятиной и артишоками", "В имбирном соусе", 5050],
+      ["Запечённая свёкла и буррата", "Сыр буррата собственного приготовления", 5050]]],
+    ["Закуски", "", [
+      ["Спринг-роллы с говядиной и овощами", "", 3150],
+      ["Домашние соленья", "Капуста, свёкла, огурцы, помидоры", 3150],
+      ["Рулеты из баклажанов по-домашнему", "", 3570],
+      ["Хумус с курицей и грибами", "С арабской питой", 4190],
+      ["Долма в пряно-апельсиновом соусе", "", 4190],
+      ["Фунчоза по-восточному", "На 2–3 персоны", 6670]]],
+    ["Супы", "", [
+      ["Коже TAL из семи злаков", "", 3490],
+      ["Крем-суп из чечевицы", "С гренками", 2690],
+      ["Крем-суп из тыквы", "С гренками", 2690],
+      ["Ауыл кеспе с курицей", "", 2690],
+      ["Нарын кочевников", "", 3290],
+      ["Чучвара по-восточному", "Пельмени на наваристом бульоне", 3290],
+      ["Хаш с чёрным хлебом", "", 3390],
+      ["Машхурда", "", 3390]]],
+    ["Лагман", "Лапша тянется вручную", [
+      ["Гуйру лагман", "", 3490, "sh"],
+      ["Гуйру цомян", "", 3490, "sh"],
+      ["Дин дин цомян", "", 3490, "sh"],
+      ["Ачик цомян", "", 3590, "sh"],
+      ["Лагман с рёбрышками", "", 5990, "sh"]]],
+    ["Восточная кухня", "", [
+      ["Плов праздничный", "", 3590],
+      ["Лагман по-домашнему с бульоном", "", 3490],
+      ["Манты", "", [["Телятина", 3490], ["Телятина и тыква", 3490]]],
+      ["Традиционный куырдак", "", 4990],
+      ["Национальный бешбармак", "", 5995],
+      ["Сырне из ягнёнка", "", 6090],
+      ["Казан-кебаб из рёбрышек ягнёнка", "С картошкой", 6190]]],
+    ["Мангал", "", [
+      ["Крылышки", "", 2250],
+      ["Филе курицы", "", 2250],
+      ["Овощи на мангале", "", 2250],
+      ["Шампиньоны", "", 2250],
+      ["Филе ягнёнка", "", 2950],
+      ["Люля-кебаб", "", 2950],
+      ["Адана-кебаб из баранины", "С домашним йогуртом и баклажаном", 4190],
+      ["Хан ассорти на 4–5 персон", "", 17540],
+      ["Хан ассорти на 6–8 персон", "Подаётся с Kombucha", 34500]]],
+    ["Горячие блюда", "", [
+      ["Классический бургер", "С картофельными лодочками", [["Телятина", 3890], ["Курица", 3890]]],
+      ["Хрустящая котлета из курицы", "С картофелем и соусом каймак с печёным чесноком", 4150],
+      ["Филе курицы с грибным соусом", "С бидаем", 4150],
+      ["Домашние котлеты из телятины", "С пшеничным ризотто", 4150],
+      ["Форель коктал с бидаем", "", 6690],
+      ["Запечённый лосось", "С зелёным горошком и сырным муссом", 8100],
+      ["Оссобука из ягнёнка", "С картофельным пюре и соусом из чернослива и можжевельника. Готовится 25 минут", 9100],
+      ["Рибай стейк травяного откорма", "Готовится 25 минут", 9990]]],
+    ["Паста", "Пенне, спагетти или феттучине — укажите в комментарии к заказу", [
+      ["Альфредо", "", 3990],
+      ["Болоньезе", "", 3990],
+      ["С лососем", "", 4890]]],
+    ["Выпечка", "", [
+      ["Хлеб из печи, 2 шт.", "", 970],
+      ["Баурсаки со сметаной", "", 1690],
+      ["Самса слоёная с говядиной, 2 шт.", "", 1890],
+      ["Самса слоёная с курицей, 2 шт.", "", 1890],
+      ["Хычины, 1 шт.", "", 1910],
+      ["Чебуреки из телятины, 3 шт.", "", 2590],
+      ["Нан астау на 3–4 персоны", "Чебуреки, самса с телятиной, самса с курицей, баурсаки, хлеб из печи", 9020]]],
+    ["TAL Kids", "", [
+      ["Наггетсы", "", 2790],
+      ["Сырные палочки", "С морковными брусочками", 2790],
+      ["Пельмени KIDS Family", "", 2790],
+      ["Вареники с картофелем", "", 2590],
+      ["Домашняя пицца Маргарита", "", 3700],
+      ["Домашняя пицца Пепперони", "", 3900]]],
+    ["Гарниры", "", [
+      ["Картофель фри", "", 1630],
+      ["Картофельное пюре", "", 1630],
+      ["Рис припущенный", "", 1630],
+      ["Капуста, тушённая по-домашнему", "", 1630],
+      ["Бидай с зеленью", "С домашним сливочным маслом", 1630]]],
+    ["Авторские десерты", "", [
+      ["Наше мороженое TAL", "", 1790],
+      ["Медовик", "", 2990],
+      ["Тарыкейк", "", 3050],
+      ["Особенный Наполеон", "", 3150],
+      ["Шоколадный TAL", "", 3150],
+      ["Almaly с мороженым", "", 3580]]]
+  ],
+  "Бар": [
+    ["Напитки степи", "Освежающие и насыщенные напитки, подаренные степью и временем", [
+      ["Шалап", "", [["250 мл", 790], ["1 л", 2290]]],
+      ["Шубат", "", [["250 мл", 1200], ["1 л", 3810]]],
+      ["Кунан кумыс", "", [["250 мл", 1200], ["1 л", 3810]]],
+      ["Куртоба, 1 л", "Сузбе, яблоко, базилик", 3190]]],
+    ["Immunity", "", [
+      ["Hot shot", "", 790],
+      ["TAL Kombucha", "", 2290],
+      ["Смузи тыква-облепиха, 0,3 л", "", 2690],
+      ["Смузи тыква-яблоко, 0,3 л", "", 2690]]],
+    ["Кофе", "", [
+      ["Эспрессо", "", 990],
+      ["Эспрессо допио", "", 1290],
+      ["Американо", "", [["Классический", 1390], ["Тары", 1590]]],
+      ["Капучино", "", [["Классический", 1490], ["Тары", 1590]]],
+      ["Латте", "", 1490],
+      ["Флэт уайт", "", 1590],
+      ["Аффогато", "", 1690],
+      ["Фраппучино", "", 1890],
+      ["Айс кофе", "Американо, капучино или латте", 1890],
+      ["Капучино или латте на альтернативном молоке", "", 1990],
+      ["Горячий шоколад «Kazakhstan»", "С маршмеллоу", 2190],
+      ["Эспрессо тоник", "", 2390],
+      ["Бамбл кофе", "", 2390]]],
+    ["Восточная кофейная традиция", "", [
+      ["Кофе по-турецки с финиками цуккари", "На 2 персоны", 2390],
+      ["Чай масала", "", 2840],
+      ["Кофе по-арабски с финиками цуккари", "На 2 персоны, 0,7 л", 3990]]],
+    ["Гранатовая коллекция", "Порция 0,25 л", [
+      ["Гранатовый чай", "Зелёный чай, гранат, мята, лимон", 2690],
+      ["Гранатовый фреш", "Свежевыжатый сок спелого граната", 3510],
+      ["Гранатовый глинтвейн", "Согревающий напиток из свежевыжатого гранатового сока с пряностями", 3740]]],
+    ["Листовой чай", "", [
+      ["Классический чёрный чай", "", [["1,1 л", 1590], ["1,6 л", 2190]]],
+      ["Спешл сенча", "", [["1,1 л", 1590], ["1,6 л", 2190]]],
+      ["Эрл Грей блю", "Бергамот", [["1,1 л", 1590], ["1,6 л", 2290]]],
+      ["Грин жасмин", "", [["1,1 л", 1590], ["1,6 л", 2290]]],
+      ["Молочный улун", "", [["1,1 л", 1590], ["1,6 л", 2290]]]]],
+    ["Традиции чая", "", [
+      ["Горный TAL чай", "14 видов трав, лимон, мята, мёд", [["1,1 л", 2790], ["1,6 л", 3390]]],
+      ["Сосновый лес", "Чёрный чай, сосновый сбор, яблоко", [["1,1 л", 2790], ["1,6 л", 3390]]],
+      ["Алатау", "Чёрный чай, чабрец, василёк, душица", [["1,1 л", 2790], ["1,6 л", 3390]]],
+      ["Малина-имбирь", "Зелёный чай, имбирь, малина, мёд", [["1,1 л", 2790], ["1,6 л", 3390]]],
+      ["Облепиха-имбирь", "Чёрный чай, облепиха, имбирь, мёд", [["1,1 л", 2790], ["1,6 л", 3390]]],
+      ["Облепиха-апельсин", "Чёрный чай, облепиха, апельсин, мёд", [["1,1 л", 2790], ["1,6 л", 3390]]],
+      ["Ягодная симфония", "Чёрный чай, клубника, малина, лимон, мята, мёд", [["1,1 л", 2790], ["1,6 л", 3390]]],
+      ["Айва-груша-шиповник", "Чёрный чай, шиповник, груша, лимон, мёд", [["1,1 л", 2790], ["1,6 л", 3390]]],
+      ["Мандарин-клюква", "Чёрный чай, клюква, мандарин, мёд", [["1,1 л", 2790], ["1,6 л", 3390]]],
+      ["Чай по-казахски", "С талканом и тары", [["1,1 л", 2790], ["1,6 л", 3390]]],
+      ["Жиде чай", "Зелёный чай, жиде", [["1,1 л", 2790], ["1,6 л", 3390]]]]],
+    ["Освежающие напитки", "", [
+      ["Морс клюквенный", "", [["0,5 л", 1790], ["1 л", 3290]]],
+      ["Ананас-щавель", "", [["0,5 л", 1790], ["1 л", 3390]]],
+      ["Апельсин-киви", "", [["0,5 л", 1790], ["1 л", 3390]]],
+      ["Манго-маракуйя", "", [["0,5 л", 1790], ["1 л", 3290]]],
+      ["Банан-ананас", "", [["0,5 л", 1790], ["1 л", 3390]]],
+      ["Ягодная симфония", "", [["0,5 л", 1790], ["1 л", 3290]]],
+      ["Авторский лимонад TAL", "По сезону", [["0,5 л", 1790], ["1 л", 3590]]]]],
+    ["Фреши и смузи", "Заряд витаминов", [
+      ["Фреш яблоко, 0,25 л", "", 2490],
+      ["Фреш апельсин, 0,25 л", "", 2490],
+      ["Фреш грейпфрут, 0,25 л", "", 2490],
+      ["Смузи клубника-банан, 0,3 л", "", 2790],
+      ["Смузи шпинат-яблоко, 0,3 л", "", 2790]]],
+    ["Молочные коктейли", "Порция 0,3 л", [
+      ["Oreo", "", 2790],
+      ["Snickers", "", 2790],
+      ["Bounty", "", 2790],
+      ["Банан", "", 2790]]],
+    ["Напитки", "", [
+      ["Вода Miglior, 0,5 л", "", 950],
+      ["Coca-Cola / Coca-Cola Zero, 0,25 л", "", 1190],
+      ["Borjomi, 0,3 л", "", 1390],
+      ["Ice tea", "Клубника, персик или лимон", [["0,3 л", 1590], ["1 л", 3150]]]]],
+    ["К чаю", "", [
+      ["Лимон", "", 400],
+      ["Молоко", "", 400],
+      ["Мёд Jantaq", "", 690],
+      ["Варенье из сосновых шишек", "", 790],
+      ["Ассорти джем", "Клубника, клюква с черникой, брусника, черника", 790],
+      ["Ассорти орехов", "Миндаль, грецкий, лесной, кедровый орех", 790],
+      ["Орехи к чаю", "Фисташки, миндаль, кешью белый и жареный", 4700]]]
+  ]
+};
+// ===== конец настроек =====
+
+const $ = s => document.querySelector(s);
+const money = n => n.toLocaleString("ru-RU").replace(/\s/g, " ") + " ₸";
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+// Flatten the menu: each dish gets a stable id "book-section-index"; variants are [label, price] pairs.
+const DISHES = {};
+const BOOKS = Object.keys(MENU);
+BOOKS.forEach((book, bi) => MENU[book].forEach(([sec, , items], si) => items.forEach(([name, desc, price, flags = ""], ii) => {
+  const id = `${bi}-${si}-${ii}`;
+  DISHES[id] = { id, name, desc, flags, sec, variants: Array.isArray(price) ? price : [[null, price]] };
+})));
+const lineKey = (id, v) => id + ":" + v;
+const lineOf = key => { const [id, v] = key.split(":"); const d = DISHES[id]; return d && d.variants[v] ? { d, v: +v, price: d.variants[v][1], label: d.variants[v][0] } : null; };
+
+// Saved state is a convenience only; the app works without storage.
+function load(key, fallback) { try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; } }
+function save(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch {} }
+
+let cart = load("tal-cart2", {});          // { "dishId:variant": qty }
+for (const k in cart) if (!lineOf(k) || !(cart[k] > 0)) delete cart[k];
+let mode = load("tal-mode", "delivery");
+const guest = load("tal-guest", { name: "", phone: "", address: "" });
+let book = BOOKS[0];
+const picked = {};                          // chosen variant per dish on the menu
+
+function toast(text) {
+  const t = $("#toast"); t.textContent = text; t.classList.add("show");
+  clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove("show"), 1600);
+}
+
+// ---- Navigation
+function show(v) {
+  document.querySelectorAll(".view").forEach(s => s.classList.toggle("active", s.id === "v-" + v));
+  document.querySelectorAll("nav button").forEach(b => b.classList.toggle("on", b.dataset.v === v));
+  if (v === "cart") renderCart();
+  if (v === "book") { if (!$("#b-name").value) $("#b-name").value = guest.name; if (!$("#b-phone").value) $("#b-phone").value = guest.phone; }
+  window.scrollTo(0, 0);
+}
+document.querySelectorAll("nav button").forEach(b => b.onclick = () => show(b.dataset.v));
+
+// ---- Menu
+const CHILI = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M11.5 4.5c-1 0-1.6.9-2.3 2.4C8 9.5 6 12 2.5 12.5c3.5 1.5 8.5 0 9.7-4.3.4-1.6.3-3.7-.7-3.7z"/><path d="M11.5 4.5c0-1.3.7-2.2 2-2.5"/></svg>`;
+const HAND = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M3 3c1 2 1 8 0 10M6 3c1 2 1 8 0 10M9 3c1 2 1 8 0 10M12 3c1 2 1 8 0 10"/></svg>`;
+const smooth = () => matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+
+document.querySelectorAll("#book-switch button").forEach(b => b.onclick = () => {
+  book = b.dataset.b;
+  document.querySelectorAll("#book-switch button").forEach(x => x.classList.toggle("on", x === b));
+  renderMenu(); window.scrollTo(0, 0);
+});
+
+function qtyOf(id) { return Object.keys(cart).filter(k => k.startsWith(id + ":")).reduce((s, k) => s + cart[k], 0); }
+
+function renderMenu() {
+  const secs = MENU[book], bi = BOOKS.indexOf(book);
+  $("#chips").innerHTML = secs.map(([s], i) => `<button class="chip${i ? "" : " on"}" data-i="${i}">${esc(s)}</button>`).join("");
+  $("#chips").querySelectorAll(".chip").forEach(c => c.onclick = () => document.getElementById("sec-" + c.dataset.i).scrollIntoView({ behavior: smooth() }));
+  $("#sections").innerHTML = secs.map(([sec, note, items], si) => `
+    <section class="section" id="sec-${si}">
+      <h2>${esc(sec)}</h2>
+      <svg class="wave" aria-hidden="true"><rect width="100%" height="8" fill="url(#wv)"/></svg>
+      ${note ? `<p class="section-note">${esc(note)}</p>` : ""}
+      ${items.map((_, ii) => itemHTML(DISHES[`${bi}-${si}-${ii}`])).join("")}
+    </section>`).join("");
+  $("#sections").querySelectorAll(".item").forEach(bindItem);
+  watchChips();
+}
+
+function itemHTML(d) {
+  const v = picked[d.id] ?? 0, q = qtyOf(d.id);
+  const tags = (d.flags.includes("s") ? `<span class="tag">${CHILI}острое</span>` : "") + (d.flags.includes("h") ? `<span class="tag">${HAND}ручная работа</span>` : "");
+  return `<div class="item" data-id="${d.id}">
+    <div class="item-main">
+      <div class="item-name">${esc(d.name)}</div>
+      ${d.desc ? `<div class="item-desc">${esc(d.desc)}</div>` : ""}
+      ${tags ? `<div class="tags">${tags}</div>` : ""}
+      ${d.variants.length > 1 ? `<div class="sizes">${d.variants.map(([l], i) => `<button class="size${i === v ? " on" : ""}" data-v="${i}">${esc(l)}</button>`).join("")}</div>` : ""}
+    </div>
+    <div class="item-side">
+      <span class="price">${money(d.variants[v][1])}</span>
+      <button class="add${q ? " in" : ""}" aria-label="Добавить: ${esc(d.name)}">${q ? "× " + q : "+"}</button>
+    </div>
+  </div>`;
+}
+function bindItem(el) {
+  const d = DISHES[el.dataset.id];
+  el.querySelectorAll(".size").forEach(s => s.onclick = () => { picked[d.id] = +s.dataset.v; refreshItem(d.id); });
+  el.querySelector(".add").onclick = () => {
+    const v = picked[d.id] ?? 0, k = lineKey(d.id, v);
+    cart[k] = (cart[k] || 0) + 1; persist(); refreshItem(d.id);
+    toast(d.name + (d.variants[v][0] ? ", " + d.variants[v][0] : "") + " — в заказе");
+  };
+}
+function refreshItem(id) {
+  const el = document.querySelector(`.item[data-id="${id}"]`);
+  if (!el) return;
+  const tmp = document.createElement("div"); tmp.innerHTML = itemHTML(DISHES[id]);
+  const fresh = tmp.firstElementChild; el.replaceWith(fresh); bindItem(fresh);
+}
+
+// Highlight the chip of the section currently at the top.
+let chipObs;
+function watchChips() {
+  if (chipObs) chipObs.disconnect();
+  if (!("IntersectionObserver" in window)) return;
+  chipObs = new IntersectionObserver(entries => {
+    const vis = entries.filter(e => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
+    if (!vis) return;
+    const i = vis.target.id.slice(4);
+    $("#chips").querySelectorAll(".chip").forEach(c => {
+      const on = c.dataset.i === i; c.classList.toggle("on", on);
+      if (on) $("#chips").scrollTo({ left: c.offsetLeft - 16, behavior: smooth() });
+    });
+  }, { rootMargin: "-130px 0px -60% 0px" });
+  document.querySelectorAll(".section").forEach(s => chipObs.observe(s));
+}
+
+// ---- Cart
+function count() { return Object.values(cart).reduce((a, b) => a + b, 0); }
+function sum() { return Object.entries(cart).reduce((s, [k, q]) => s + lineOf(k).price * q, 0); }
+function persist() {
+  save("tal-cart2", cart);
+  const n = count(), b = $("#badge");
+  b.textContent = n; b.classList.toggle("show", n > 0);
+}
+function lineName(l) { return l.d.name + (l.label ? ` (${l.label})` : ""); }
+function renderCart() {
+  const keys = Object.keys(cart);
+  if (!keys.length) {
+    $("#cart").innerHTML = `<div class="panel empty">Здесь пока пусто.<br>Загляните в меню — там много вкусного.</div>`;
+    return;
+  }
+  const fee = mode === "delivery" ? CONFIG.deliveryFee : 0;
+  $("#cart").innerHTML = `
+    <div class="panel">
+      ${keys.map(k => { const l = lineOf(k); return `<div class="line">
+        <div class="line-name">${esc(lineName(l))}<div class="line-price">${money(l.price)}</div></div>
+        <div class="qty"><button data-d="-1" data-k="${k}" aria-label="Меньше">−</button><span>${cart[k]}</span><button data-d="1" data-k="${k}" aria-label="Больше">+</button></div>
+      </div>`; }).join("")}
+      ${fee ? `<div class="line"><div class="line-name">Доставка</div><span>${money(fee)}</span></div>` : ""}
+      <div class="total"><span>Итого</span><span>${money(sum() + fee)}</span></div>
+    </div>
+    <div class="panel">
+      <div class="seg" id="mode">
+        <button data-m="delivery" class="${mode === "delivery" ? "on" : ""}">Доставка</button>
+        <button data-m="pickup" class="${mode === "pickup" ? "on" : ""}">Самовывоз</button>
+      </div>
+      <label for="o-name">Имя</label>
+      <input id="o-name" autocomplete="name" value="${esc(guest.name)}" placeholder="Как к вам обращаться">
+      <label for="o-phone">Телефон</label>
+      <input id="o-phone" type="tel" autocomplete="tel" value="${esc(guest.phone)}" placeholder="+7 7__ ___ __ __">
+      ${mode === "delivery" ? `<label for="o-addr">Адрес</label>
+      <input id="o-addr" autocomplete="street-address" value="${esc(guest.address)}" placeholder="Улица, дом, квартира">` : ""}
+      <label for="o-note">Комментарий</label>
+      <textarea id="o-note" placeholder="Вид пасты, аллергия, приборы на 3 персоны…"></textarea>
+      <p class="err" id="o-err"></p>
+      <a class="primary" id="o-send" href="#" target="_blank" rel="noopener">Отправить заказ в WhatsApp</a>
+      <p class="hint">Оплата при получении. Мы перезвоним для подтверждения</p>
+    </div>`;
+  $("#cart").querySelectorAll(".qty button").forEach(b => b.onclick = () => {
+    const k = b.dataset.k; cart[k] += +b.dataset.d;
+    if (cart[k] <= 0) delete cart[k];
+    keepGuest(); persist(); renderCart(); renderMenu();
+  });
+  $("#mode").querySelectorAll("button").forEach(b => b.onclick = () => { keepGuest(); mode = b.dataset.m; save("tal-mode", mode); renderCart(); });
+  $("#o-send").onclick = sendOrder;
+}
+function keepGuest() {
+  if ($("#o-name")) guest.name = $("#o-name").value.trim();
+  if ($("#o-phone")) guest.phone = $("#o-phone").value.trim();
+  if ($("#o-addr")) guest.address = $("#o-addr").value.trim();
+  save("tal-guest", guest);
+}
+function validPhone(p) { return p.replace(/\D/g, "").length >= 10; }
+// The send buttons are real links: the click handler fills in the WhatsApp URL, or cancels with an error.
+function openWhatsApp(link, text) { link.href = "https://wa.me/" + CONFIG.whatsapp + "?text=" + encodeURIComponent(text); }
+function fail(e, el, msg) { e.preventDefault(); el.textContent = msg; }
+function sendOrder(e) {
+  keepGuest();
+  const err = $("#o-err");
+  if (!guest.name) return fail(e, err, "Укажите имя");
+  if (!validPhone(guest.phone)) return fail(e, err, "Укажите телефон");
+  if (mode === "delivery" && !guest.address) return fail(e, err, "Укажите адрес доставки");
+  if (sum() < CONFIG.minOrder) return fail(e, err, "Минимальный заказ — " + money(CONFIG.minOrder));
+  err.textContent = "";
+  const fee = mode === "delivery" ? CONFIG.deliveryFee : 0;
+  const note = $("#o-note").value.trim();
+  const text = [
+    "Здравствуйте! Заказ из приложения TAL", "",
+    ...Object.keys(cart).map(k => { const l = lineOf(k); return `• ${lineName(l)} × ${cart[k]} — ${money(l.price * cart[k])}`; }),
+    fee ? `Доставка — ${money(fee)}` : null,
+    `Итого: ${money(sum() + fee)}`, "",
+    mode === "delivery" ? "Доставка: " + guest.address : "Самовывоз",
+    "Имя: " + guest.name, "Телефон: " + guest.phone,
+    note ? "Комментарий: " + note : null
+  ].filter(l => l !== null).join("\n");
+  openWhatsApp(e.currentTarget, text);
+}
+
+// ---- Booking
+function setupBooking() {
+  const d = $("#b-date"), today = new Date();
+  const iso = dt => new Date(dt.getTime() - dt.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+  d.min = iso(today); d.value = iso(today);
+  const max = new Date(today); max.setDate(max.getDate() + 60); d.max = iso(max);
+  const times = [];
+  for (let h = CONFIG.openHour; h < CONFIG.closeHour; h++) times.push(h + ":00", h + ":30");
+  $("#b-time").innerHTML = times.map(t => `<option>${t.padStart(5, "0")}</option>`).join("");
+  $("#b-time").value = "19:00";
+  $("#b-guests").innerHTML = Array.from({ length: 20 }, (_, i) => `<option value="${i + 1}">${i + 1}</option>`).join("") + `<option value="больше 20">Больше 20</option>`;
+  $("#b-guests").value = "2";
+  $("#b-send").onclick = e => {
+    const name = $("#b-name").value.trim(), phone = $("#b-phone").value.trim(), err = $("#b-err");
+    if (!d.value) return fail(e, err, "Выберите дату");
+    if (!name) return fail(e, err, "Укажите имя");
+    if (!validPhone(phone)) return fail(e, err, "Укажите телефон");
+    err.textContent = "";
+    guest.name = name; guest.phone = phone; save("tal-guest", guest);
+    const date = new Date(d.value + "T00:00").toLocaleDateString("ru-RU", { day: "numeric", month: "long", weekday: "long" });
+    const note = $("#b-note").value.trim();
+    openWhatsApp(e.currentTarget, [
+      "Здравствуйте! Хочу забронировать столик в TAL", "",
+      `Дата: ${date}`, `Время: ${$("#b-time").value}`, `Гостей: ${$("#b-guests").value}`,
+      `Имя: ${name}`, `Телефон: ${phone}`, note ? "Пожелания: " + note : null
+    ].filter(l => l !== null).join("\n"));
+  };
+}
+
+// ---- Info
+function renderInfo() {
+  const rows = [
+    ["Адрес", `<a href="${esc(CONFIG.mapUrl)}" target="_blank" rel="noopener">${esc(CONFIG.address)}</a>`],
+    ["Часы", esc(CONFIG.hours)],
+    ["Телефон", `<a href="tel:${CONFIG.phone.replace(/[^\d+]/g, "")}">${esc(CONFIG.phone)}</a>`],
+    ["WhatsApp", `<a href="https://wa.me/${CONFIG.whatsapp}" target="_blank" rel="noopener">Написать нам</a>`],
+    CONFIG.instagram ? ["Instagram", `<a href="https://instagram.com/${esc(CONFIG.instagram)}" target="_blank" rel="noopener">@${esc(CONFIG.instagram)}</a>`] : null,
+    ["В зале", "Обслуживание 10%"],
+    ["Аллергия", "Предупредите нас — подскажем, что выбрать"]
+  ].filter(Boolean);
+  $("#info").innerHTML = rows.map(([k, v]) => `<div class="info-row"><b>${k}</b><span>${v}</span></div>`).join("");
+}
+
+renderMenu(); persist(); setupBooking(); renderInfo();
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+}
+</script>
+</body>
+</html>
